@@ -41,7 +41,7 @@ from converter import Ingestor, Egestor
 class KITTIIngestor(Ingestor):
     def validate(self, path):
         expected_dirs = [
-            'training/image_2',
+            'training/bev',
             'training/label_2'
         ]
         for subdir in expected_dirs:
@@ -61,9 +61,9 @@ class KITTIIngestor(Ingestor):
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
-            if os.path.exists(f"{root}/training/image_2/{image_id}.{image_ext}"):
+            if os.path.exists(f"{root}/training/bev/{image_id}.{image_ext}"):
                 return image_ext
-        raise Exception(f"could not find jpg or png for {image_id} at {root}/training/image_2")
+        raise Exception(f"could not find jpg or png for {image_id} at {root}/training/bev")
 
     def _get_image_ids(self, root):
         path = f"{root}/train.txt"
@@ -74,7 +74,7 @@ class KITTIIngestor(Ingestor):
         detections_fpath = f"{root}/training/label_2/{image_id}.txt"
         detections = self._get_detections(detections_fpath)
         detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
-        image_path = f"{root}/training/image_2/{image_id}.{image_ext}"
+        image_path = f"{root}/training/bev/{image_id}.{image_ext}"
         image_width, image_height = _image_dimensions(image_path)
         return {
             'image': {
@@ -126,7 +126,7 @@ class KITTIEgestor(Egestor):
         }
 
     def egest(self, *, image_detections, root):
-        images_dir = f"{root}/training/image_2"
+        images_dir = f"{root}/training/bev"
         os.makedirs(images_dir, exist_ok=True)
         labels_dir = f"{root}/training/label_2"
         os.makedirs(labels_dir, exist_ok=True)
