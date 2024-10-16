@@ -3,3 +3,4 @@
 kitti-tracking*
 .venv*/
 __pycache__/
+poetry.lock
