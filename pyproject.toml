@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "vod-converter"
+version = "0.1.0"
+description = ""
+authors = ["hermann-web <hermannagossou6@gmail.com>"]
+readme = "README.md"
+
+# packages = [{include = "vod_converter"},{include = "velo_to_bev"}]
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.24.4"
+torch = {version = "2.2.0", source = "pytorch-cpu"}
+torchvision = {version = "0.17.0", source = "pytorch-cpu"}
+torchaudio = {version = "2.2.0", source = "pytorch-cpu"}
+opencv-python = "^4.10.0.84"
+pillow = "^10.4.0"
+jsonschema = "3.2.0"
+
+# https://stackoverflow.com/a/76876290/16668046
+requests-toolbelt = "1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+yapf = "^0.40.2"
+isort = "^5.10.2"
+
+[tool.yapf]
+based_on_style = "google"
+column_limit = 100
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

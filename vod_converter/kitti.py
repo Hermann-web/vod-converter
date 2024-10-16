@@ -32,18 +32,23 @@ each row corresponds to one object. The 15 columns represent:
 
 import csv
 import os
-from PIL import Image
 import shutil
+import sys
+from pathlib import Path
+from typing import Dict, List, Union
 
-from converter import Ingestor, Egestor
+from converter import Egestor, Ingestor
+from PIL import Image
+
+sys.path.append(Path(__file__).parent)
+
+from velo_to_bev.velo_to_bev import get_bev_dataset
 
 
 class KITTIIngestor(Ingestor):
+
     def validate(self, path):
-        expected_dirs = [
-            'training/bev',
-            'training/label_2'
-        ]
+        expected_dirs = ['training/image_2', 'training/label_2']
         for subdir in expected_dirs:
             if not os.path.isdir(f"{path}/{subdir}"):
                 return False, f"Expected subdirectory {subdir} within {path}"
@@ -57,13 +62,16 @@ class KITTIIngestor(Ingestor):
         if len(image_ids):
             first_image_id = image_ids[0]
             image_ext = self.find_image_ext(path, first_image_id)
-        return [self._get_image_detection(path, image_name, image_ext=image_ext) for image_name in image_ids]
+        return [
+            self._get_image_detection(path, image_name, image_ext=image_ext)
+            for image_name in image_ids
+        ]
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
-            if os.path.exists(f"{root}/training/bev/{image_id}.{image_ext}"):
+            if os.path.exists(f"{root}/training/image_2/{image_id}.{image_ext}"):
                 return image_ext
-        raise Exception(f"could not find jpg or png for {image_id} at {root}/training/bev")
+        raise Exception(f"could not find jpg or png for {image_id} at {root}/training/image_2")
 
     def _get_image_ids(self, root):
         path = f"{root}/train.txt"
@@ -73,8 +81,10 @@ class KITTIIngestor(Ingestor):
     def _get_image_detection(self, root, image_id, *, image_ext='png'):
         detections_fpath = f"{root}/training/label_2/{image_id}.txt"
         detections = self._get_detections(detections_fpath)
-        detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
-        image_path = f"{root}/training/bev/{image_id}.{image_ext}"
+        detections = [
+            det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']
+        ]
+        image_path = f"{root}/training/image_2/{image_id}.{image_ext}"
         image_width, image_height = _image_dimensions(image_path)
         return {
             'image': {
@@ -108,8 +118,10 @@ def _image_dimensions(path):
     with Image.open(path) as image:
         return image.width, image.height
 
-DEFAULT_TRUNCATED = 0.0 # 0% truncated
-DEFAULT_OCCLUDED = 0    # fully visible
+
+DEFAULT_TRUNCATED = 0.0  # 0% truncated
+DEFAULT_OCCLUDED = 0  # fully visible
+
 
 class KITTIEgestor(Egestor):
 
@@ -126,7 +138,7 @@ class KITTIEgestor(Egestor):
         }
 
     def egest(self, *, image_detections, root):
-        images_dir = f"{root}/training/bev"
+        images_dir = f"{root}/training/image_2"
         os.makedirs(images_dir, exist_ok=True)
         labels_dir = f"{root}/training/label_2"
         os.makedirs(labels_dir, exist_ok=True)
@@ -159,4 +171,48 @@ class KITTIEgestor(Egestor):
                     csvwriter.writerow(kitti_row)
 
 
+class KITTIBEVIngestor(Ingestor):
 
+    def validate(self, path):
+        # Validate the required directories exist
+        required_dirs = ['training/velodyne', 'training/label_2', 'training/calib']
+        for subdir in required_dirs:
+            if not os.path.isdir(f"{path}/{subdir}"):
+                return False, f"Expected subdirectory {subdir} within {path}"
+        if not os.path.isfile(f"{path}/train.txt"):
+            return False, "Expected train.txt file within dataset"
+        return True, None
+
+    def ingest(self, path):
+        path = Path(path)
+        assert path.exists() and path.is_dir()
+        data_folder = path / "training"
+        bev_folder = path / "bev"
+        bev_folder.mkdir(exist_ok=True)
+        bev_dataset = get_bev_dataset(data_folder, bev_folder)
+        img_detections = []
+        for img_data in bev_dataset:
+            bev_fname: str = img_data["bev_fname"]
+            bounding_boxes: List = img_data["bounding_boxes"]
+            img_detections.append(self._parse_detection(bev_folder, bev_fname, bounding_boxes))
+        return img_detections
+
+    def _parse_detection(self, root: Path, bev_fname: str, bounding_boxes: List[Dict]):
+        detections = [
+            det for det in bounding_boxes
+            if det['left'] < det['right'] and det['top'] < det['bottom']
+        ]
+        image_path = root / bev_fname
+        assert Path(image_path).exists(), f"{image_path} not found"
+        image_id = Path(image_path).stem
+        image_width, image_height = _image_dimensions(image_path)
+        return {
+            'image': {
+                'id': image_id,
+                'path': str(image_path.absolute()),
+                'segmented_path': None,
+                'width': image_width,
+                'height': image_height
+            },
+            'detections': detections
+        }

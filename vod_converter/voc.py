@@ -6,12 +6,13 @@ http://host.robots.ox.ac.uk/pascal/VOC/voc2012/htmldoc/index.html
 
 import os
 import shutil
-
-from converter import Ingestor, Egestor
 import xml.etree.ElementTree as ET
+
+from converter import Egestor, Ingestor
 
 
 class VOCIngestor(Ingestor):
+
     def validate(self, root):
         path = f"{root}/VOC2012"
         for subdir in ["ImageSets", "JPEGImages", "Annotations"]:
@@ -147,19 +148,21 @@ class VOCEgestor(Egestor):
             })
 
             for detection in image_detection['detections']:
-                x_object = add_sub_node(xml_root, 'object', {
-                    'name': detection['label'],
-                    'difficult': 0,
-                    'occluded': 0,
-                    'truncated': 0,
-                    'pose': 'Unspecified'
-                })
-                add_sub_node(x_object, 'bndbox', {
-                    'xmin': detection['left'] + 1,
-                    'xmax': detection['right'] + 1,
-                    'ymin': detection['top'] + 1,
-                    'ymax': detection['bottom'] + 1
-                })
+                x_object = add_sub_node(
+                    xml_root, 'object', {
+                        'name': detection['label'],
+                        'difficult': 0,
+                        'occluded': 0,
+                        'truncated': 0,
+                        'pose': 'Unspecified'
+                    })
+                add_sub_node(
+                    x_object, 'bndbox', {
+                        'xmin': detection['left'] + 1,
+                        'xmax': detection['right'] + 1,
+                        'ymin': detection['top'] + 1,
+                        'ymax': detection['bottom'] + 1
+                    })
 
             ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml")
 
@@ -175,10 +178,3 @@ def add_text_node(node, name, text):
     subnode = ET.SubElement(node, name)
     subnode.text = f"{text}"
     return subnode
-
-
-
-
-
-
-

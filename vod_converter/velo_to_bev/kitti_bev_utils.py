@@ -1,7 +1,10 @@
-from typing import Dict
-import numpy as np
 import math
-import config as cnf
+from typing import Dict, List, Tuple
+
+import cv2
+import numpy as np
+import velo_to_bev.config as cnf
+from velo_to_bev.kitti_utils import Object3d
 
 
 def removePoints(PointCloud, BoundaryCond, reduce_resolution=0):
@@ -96,9 +99,10 @@ def makeBVFeature(PointCloud_, Discretization, bc):
     return RGB_Map
 
 
-def read_labels_for_bevbox(objects):
+def read_labels_for_bevbox(objects: List[Object3d]) -> Tuple[np.ndarray, bool]:
     bbox_selected = []
     for obj in objects:
+        print(f"obj.cls_id:{obj.cls_id}")
         if obj.cls_id != -1:
             bbox = [obj.cls_id, obj.t[0], obj.t[1], obj.t[2], obj.h, obj.w, obj.l, obj.ry]
             bbox_selected.append(bbox)
@@ -117,7 +121,7 @@ def get_corners(x, y, w, l, yaw):
     # Ensure width and length are within BEV_WIDTH and BEV_HEIGHT
     assert w < cnf.BEV_WIDTH, f"Error: Width {w} exceeds BEV_WIDTH {cnf.BEV_WIDTH}"
     assert l < cnf.BEV_HEIGHT, f"Error: Length {l} exceeds BEV_HEIGHT {cnf.BEV_HEIGHT}"
-    
+
     # front left
     bev_corners[0, 0] = x - w / 2 * np.cos(yaw) - l / 2 * np.sin(yaw)
     bev_corners[0, 1] = y - w / 2 * np.sin(yaw) + l / 2 * np.cos(yaw)
@@ -137,11 +141,12 @@ def get_corners(x, y, w, l, yaw):
     return bev_corners
 
 
-def build_yolo_target(labels):
+def build_yolo_target(labels: np.ndarray) -> np.ndarray:
     bc = cnf.boundary
     target = np.zeros([50, 7], dtype=np.float32)
 
     index = 0
+    print(f"labels:{labels.shape}")
     for i in range(labels.shape[0]):
         cl, x, y, z, h, w, l, yaw = labels[i]
 
@@ -212,3 +217,11 @@ def inverse_yolo_target(targets: np.ndarray, bc: Dict[str, float], add_conf: boo
 
     return labels
 
+
+# send parameters in bev image coordinates format
+def drawRotatedBox(img, x, y, w, l, yaw, color):
+    bev_corners = get_corners(x, y, w, l, yaw)
+    corners_int = bev_corners.astype(int)
+    cv2.polylines(img, [corners_int.reshape(-1, 1, 2)], True, color, 2)
+    print("corners_int = ", corners_int)
+    return corners_int

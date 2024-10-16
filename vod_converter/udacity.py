@@ -7,12 +7,10 @@ https://github.com/udacity/self-driving-car/tree/master/annotations
 import csv
 import glob
 import os
-from PIL import Image
-
 from collections import defaultdict
 
-
 from converter import Ingestor
+from PIL import Image
 
 
 class UdacityCrowdAIIngestor(Ingestor):
@@ -80,6 +78,7 @@ class UdacityCrowdAIIngestor(Ingestor):
 
 
 class UdacityAuttiIngestor(Ingestor):
+
     def validate(self, root):
         labels_path = f"{root}/labels.csv"
         if not os.path.isfile(labels_path):

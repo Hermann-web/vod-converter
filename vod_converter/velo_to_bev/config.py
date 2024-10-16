@@ -6,6 +6,7 @@ CLASS_NAME_TO_ID = {
     'Cyclist': 2,
     'Van': 0,
     'Person_sitting': 1,
+    # 'Truck': 0,
 }
 
 # Front side (of vehicle) Point Cloud boundary for BEV
@@ -21,3 +22,5 @@ MAX_COUNTS = 64  #max of repetitions of the same point in the dataset
 DISCRETIZATION = (boundary["maxX"] - boundary["minX"]) / BEV_HEIGHT
 
 colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]]
+
+DEBUG = False

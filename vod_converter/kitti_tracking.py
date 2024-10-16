@@ -49,22 +49,20 @@ corresponds to one object. The 17 columns represent:
 """
 
 import csv
-from collections import defaultdict
 import os
 import re
-from PIL import Image
+from collections import defaultdict
 
 from converter import Ingestor
+from PIL import Image
 
 LABEL_F_PATTERN = re.compile('[0-9]+\.txt')
 
 
 class KITTITrackingIngestor(Ingestor):
+
     def validate(self, path):
-        expected_dirs = [
-            'image_02',
-            'label_02'
-        ]
+        expected_dirs = ['image_02', 'label_02']
         for subdir in expected_dirs:
             if not os.path.isdir(f"{path}/{subdir}"):
                 return False, f"Expected subdirectory {subdir} within {path}"
@@ -79,7 +77,9 @@ class KITTITrackingIngestor(Ingestor):
             labels_path = f"{path}/label_02/{label_fname}"
             images_dir = f"{path}/image_02/{frame_name}"
             image_detections.extend(
-                self._get_track_image_detections(frame_name=frame_name, labels_path=labels_path, images_dir=images_dir))
+                self._get_track_image_detections(frame_name=frame_name,
+                                                 labels_path=labels_path,
+                                                 images_dir=images_dir))
         return image_detections
 
     def _get_track_image_detections(self, *, frame_name, labels_path, images_dir):

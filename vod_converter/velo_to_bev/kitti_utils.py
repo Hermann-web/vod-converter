@@ -1,9 +1,9 @@
 from __future__ import print_function
+
 from typing import Tuple
 
 import numpy as np
-import os
-import config as cnf
+import velo_to_bev.config as cnf
 
 
 class Object3d(object):
@@ -41,7 +41,7 @@ class Object3d(object):
     def cls_type_to_id(self, cls_type):
         # Car and Van ==> Car class
         # Pedestrian and Person_Sitting ==> Pedestrian Class
-        CLASS_NAME_TO_ID = {'Car': 0, 'Pedestrian': 1, 'Cyclist': 2, 'Van': 0, 'Person_sitting': 1}
+        CLASS_NAME_TO_ID = cnf.CLASS_NAME_TO_ID
         if cls_type not in CLASS_NAME_TO_ID.keys():
             return -1
         return CLASS_NAME_TO_ID[cls_type]
@@ -136,7 +136,7 @@ class Calibration(object):
 
     def read_calib_file(self, filepath):
         with open(filepath) as f:
-            print("filepath = ",filepath)
+            print("filepath = ", filepath)
             lines = f.readlines()
 
         obj = lines[2].strip().split(' ')[1:]
@@ -301,7 +301,6 @@ def read_label(label_filename):
     return objects
 
 
-
 def load_velo_scan(velo_filename):
     scan = np.fromfile(velo_filename, dtype=np.float32)
     scan = scan.reshape((-1, 4))
@@ -400,4 +399,3 @@ def compute_orientation_3d(obj, P):
     # project orientation into the image plane
     orientation_2d = project_to_image(np.transpose(orientation_3d), P)
     return orientation_2d, np.transpose(orientation_3d)
-
