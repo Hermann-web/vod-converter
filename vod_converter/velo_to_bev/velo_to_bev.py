@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 from pathlib import Path
 from typing import Dict, List
@@ -10,6 +11,8 @@ import velo_to_bev.config as cnf
 import velo_to_bev.kitti_aug_utils as aug_utils
 import velo_to_bev.kitti_bev_utils as bev_utils
 import velo_to_bev.kitti_utils as kitti_utils
+
+logger = logging.getLogger(__name__)
 
 
 class KittiYOLODataset:
@@ -62,12 +65,12 @@ class KittiYOLODataset:
             labels[:, 1:] = aug_utils.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                           calib.P)  # convert rect cam to velo cord
         target = bev_utils.build_yolo_target(labels)
-        print(f"target:{target.shape}")
+        logger.debug(f"target:{target.shape}")
         ntargets = 0
         for i, t in enumerate(target):
             if t.sum(0):
                 ntargets += 1
-        print(f"ntargets:{ntargets}")
+        logger.debug(f"ntargets:{ntargets}")
         targets = torch.zeros((ntargets, 8))
         for i, t in enumerate(target):
             if t.sum(0):
@@ -119,7 +122,7 @@ def get_bev_dataset(data_folder: Path, bev_folder: Path):
         bounding_boxes = []
         for c, x, y, w, l, yaw in targets[:, 1:7].numpy():
             # Draw rotated box
-            print(f"---c = {c}, x, y = {x, y}, w, l = {w, l}, yaw = {yaw}")
+            logger.debug(f"---c = {c}, x, y = {x, y}, w, l = {w, l}, yaw = {yaw}")
             c = int(c)  # float to int
             corners_int = bev_utils.drawRotatedBox(img_display, x, y, w, l, yaw, cnf.colors[c])
             assert corners_int.ndim == 2 and corners_int.shape[1] == 2

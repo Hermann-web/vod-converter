@@ -1,8 +1,11 @@
 from __future__ import division
 
+import logging
+
 import config as cnf
 import torch
 
+logger = logging.getLogger(__name__)
 Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
 
@@ -16,8 +19,7 @@ def rescale_boxes(boxes: Tensor, current_dim, original_shape):
     unpad_h = current_dim - pad_y
     unpad_w = current_dim - pad_x
     # Rescale bounding boxes to dimension of original image
-    if cnf.DEBUG:
-        print("boxes = ", boxes)
+    logger.debug(f"boxes = {boxes}")
     boxes[:, 0] = ((boxes[:, 0] - pad_x // 2) / unpad_w) * orig_w
     boxes[:, 1] = ((boxes[:, 1] - pad_y // 2) / unpad_h) * orig_h
     boxes[:, 2] = ((boxes[:, 2] - pad_x // 2) / unpad_w) * orig_w

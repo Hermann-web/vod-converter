@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import logging
 from typing import Tuple
 
 import numpy as np
 import velo_to_bev.config as cnf
+
+logger = logging.getLogger(__name__)
 
 
 class Object3d(object):
@@ -136,7 +139,7 @@ class Calibration(object):
 
     def read_calib_file(self, filepath):
         with open(filepath) as f:
-            print("filepath = ", filepath)
+            logger.debug(f"filepath = {filepath}")
             lines = f.readlines()
 
         obj = lines[2].strip().split(' ')[1:]

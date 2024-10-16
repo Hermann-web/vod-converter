@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Dict, List, Tuple
 
@@ -5,6 +6,8 @@ import cv2
 import numpy as np
 import velo_to_bev.config as cnf
 from velo_to_bev.kitti_utils import Object3d
+
+logger = logging.getLogger(__name__)
 
 
 def removePoints(PointCloud, BoundaryCond, reduce_resolution=0):
@@ -102,7 +105,7 @@ def makeBVFeature(PointCloud_, Discretization, bc):
 def read_labels_for_bevbox(objects: List[Object3d]) -> Tuple[np.ndarray, bool]:
     bbox_selected = []
     for obj in objects:
-        print(f"obj.cls_id:{obj.cls_id}")
+        logger.debug(f"obj.cls_id:{obj.cls_id}")
         if obj.cls_id != -1:
             bbox = [obj.cls_id, obj.t[0], obj.t[1], obj.t[2], obj.h, obj.w, obj.l, obj.ry]
             bbox_selected.append(bbox)
@@ -146,7 +149,7 @@ def build_yolo_target(labels: np.ndarray) -> np.ndarray:
     target = np.zeros([50, 7], dtype=np.float32)
 
     index = 0
-    print(f"labels:{labels.shape}")
+    logger.debug(f"labels:{labels.shape}")
     for i in range(labels.shape[0]):
         cl, x, y, z, h, w, l, yaw = labels[i]
 
@@ -223,5 +226,5 @@ def drawRotatedBox(img, x, y, w, l, yaw, color):
     bev_corners = get_corners(x, y, w, l, yaw)
     corners_int = bev_corners.astype(int)
     cv2.polylines(img, [corners_int.reshape(-1, 1, 2)], True, color, 2)
-    print("corners_int = ", corners_int)
+    logger.debug(f"corners_int = {corners_int}")
     return corners_int
