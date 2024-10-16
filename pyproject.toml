@@ -21,9 +21,9 @@ torchaudio = {version = "2.2.0", source = "pytorch-cpu"}
 opencv-python = "^4.10.0.84"
 pillow = "^10.4.0"
 jsonschema = "3.2.0"
+tqdm = "^4.66.5"
+requests-toolbelt = "1.0.0" # https://stackoverflow.com/a/76876290/16668046
 
-# https://stackoverflow.com/a/76876290/16668046
-requests-toolbelt = "1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 yapf = "^0.40.2"

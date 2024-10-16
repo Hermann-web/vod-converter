@@ -1,4 +1,5 @@
 import glob
+import json
 import logging
 import os
 from pathlib import Path
@@ -133,10 +134,10 @@ def get_bev_dataset(data_folder: Path, bev_folder: Path):
             # Calculate the bounding box
             bounding_box = {
                 'label': cnf.class_list[c],
-                'left': np.min(x_coords),
-                'right': np.max(x_coords),
-                'top': np.min(y_coords),
-                'bottom': np.max(y_coords)
+                'left': int(max(0, np.min(x_coords))),
+                'right': int(min(cnf.BEV_WIDTH - 1, np.max(x_coords))),
+                'top': int(max(0, np.min(y_coords))),
+                'bottom': int(min(cnf.BEV_HEIGHT - 1, np.max(y_coords)))
             }
             bounding_boxes.append(bounding_box)
 
@@ -150,9 +151,26 @@ def get_bev_dataset(data_folder: Path, bev_folder: Path):
     return bev_dataset
 
 
+def get_bev_dataset_wrapper(data_folder: Path, bev_folder: Path):
+    # Check if the JSON file exists
+    json_file = Path(bev_folder).parent / (bev_folder.name + ".temp.json")
+    if Path(json_file).exists():
+        print(f"JSON file {json_file} already exists. Loading data from JSON.")
+        with open(json_file, 'r') as f:
+            bev_dataset = json.load(f)
+        return bev_dataset
+    bev_dataset = get_bev_dataset(data_folder=data_folder, bev_folder=bev_folder)
+
+    # Save the dataset to a JSON file
+    with open(json_file, 'w') as f:
+        json.dump(bev_dataset, f, indent=4)
+
+    return bev_dataset
+
+
 if __name__ == "__main__":
     data_folder = Path(r"/home/ubuntu/Documents/share_remote/kitti-min")
     data_folder = data_folder / "training"
     bev_folder = data_folder / "bev"
     bev_folder.mkdir(exist_ok=True)
-    bev_dataset = get_bev_dataset(data_folder, bev_folder)
+    bev_dataset = get_bev_dataset_wrapper(data_folder, bev_folder)

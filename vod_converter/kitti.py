@@ -39,10 +39,11 @@ from typing import Dict, List, Union
 
 from converter import Egestor, Ingestor
 from PIL import Image
+from tqdm import tqdm
 
 sys.path.append(Path(__file__).parent)
 
-from velo_to_bev.velo_to_bev import get_bev_dataset
+from velo_to_bev.velo_to_bev import get_bev_dataset, get_bev_dataset_wrapper
 
 
 class KITTIIngestor(Ingestor):
@@ -189,9 +190,9 @@ class KITTIBEVIngestor(Ingestor):
         data_folder = path / "training"
         bev_folder = path / "bev"
         bev_folder.mkdir(exist_ok=True)
-        bev_dataset = get_bev_dataset(data_folder, bev_folder)
+        bev_dataset = get_bev_dataset_wrapper(data_folder, bev_folder)
         img_detections = []
-        for img_data in bev_dataset:
+        for img_data in tqdm(bev_dataset):
             bev_fname: str = img_data["bev_fname"]
             bounding_boxes: List = img_data["bounding_boxes"]
             img_detections.append(self._parse_detection(bev_folder, bev_fname, bounding_boxes))
