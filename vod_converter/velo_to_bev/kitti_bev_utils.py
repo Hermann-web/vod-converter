@@ -44,14 +44,16 @@ def removePoints(PointCloud, BoundaryCond, reduce_resolution=0):
     return PointCloud
 
 
-def makeBVFeature(PointCloud_, Discretization, bc):
+def makeBVFeature(PointCloud_, Discretization, bc, projection_plane='xy'):
     """
-    Create a BEV feature map from a point cloud.
+    Create a BEV feature map from a point cloud, projected onto the specified plane.
     
     Parameters:
     PointCloud_ (numpy.ndarray): The input point cloud.
     Discretization (float): The discretization factor.
-    bc (dict): Boundary conditions with 'maxZ' and 'minZ'.
+    bc (dict): Boundary conditions with 'maxX', 'minX', 'maxZ', and 'minZ'.
+    projection_plane (str): The plane to project onto. 
+                            'xy' for the ground plane (default), 'yz' for the image plane.
     
     Returns:
     numpy.ndarray: The RGB BEV feature map.
@@ -63,27 +65,37 @@ def makeBVFeature(PointCloud_, Discretization, bc):
     Width = cnf.BEV_WIDTH + 1
     max_counts = cnf.MAX_COUNTS
 
-    # Discretize Feature Map
-    PointCloud[:, 0] = np.int_(np.floor(PointCloud[:, 0] / Discretization))
-    PointCloud[:, 1] = np.int_(np.floor(PointCloud[:, 1] / Discretization) + Width / 2)
+    # Dynamically change axes based on projection plane
+    if projection_plane == 'xy':
+        # Ground plane projection (z = 0)
+        x_idx, y_idx, height_idx = 0, 1, 2  # x and y as axes, z as "height"
+        max_height = float(np.abs(bc['maxZ'] - bc['minZ']))  # Use Z-range for normalization
+    elif projection_plane == 'yz':
+        # Image plane projection (x = 0)
+        x_idx, y_idx, height_idx = 2, 1, 0  # z and y as axes, x as "height"
+        max_height = float(np.abs(bc['maxX'] - bc['minX']))  # Use X-range for normalization
+    else:
+        raise ValueError("Invalid projection_plane. Use 'xy' or 'yz'.")
 
-    # sort-3times
-    indices = np.lexsort((-PointCloud[:, 2], PointCloud[:, 1], PointCloud[:, 0]))
+    # Discretize the feature map
+    PointCloud[:, y_idx] = np.int_(np.floor(PointCloud[:, y_idx] / Discretization) + Width / 2)
+    PointCloud[:, x_idx] = np.int_(np.floor(PointCloud[:, x_idx] / Discretization))
+
+    # Sort points (sort by height, then by y, then by x)
+    indices = np.lexsort((-PointCloud[:, height_idx], PointCloud[:, y_idx], PointCloud[:, x_idx]))
     PointCloud = PointCloud[indices]
 
     # Height Map: normalize based on height range
     heightMap = np.zeros((Height, Width))
 
-    _, indices, counts = np.unique(PointCloud[:, 0:2],
-                                   axis=0,
-                                   return_index=True,
-                                   return_counts=True)
+    _, unique_indices, counts = np.unique(PointCloud[:, [x_idx, y_idx]],
+                                          axis=0,
+                                          return_index=True,
+                                          return_counts=True)
 
-    PointCloud_top = PointCloud[indices]
-    # some important problem is image coordinate is (y,x), not (x,y)
-    max_height = float(np.abs(bc['maxZ'] - bc['minZ']))
-    heightMap[np.int_(PointCloud_top[:, 0]),
-              np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 2] / max_height
+    PointCloud_top = PointCloud[unique_indices]
+    heightMap[np.int_(PointCloud_top[:, x_idx]),
+              np.int_(PointCloud_top[:, y_idx])] = PointCloud_top[:, height_idx] / max_height
 
     # Intensity Map & DensityMap
     intensityMap = np.zeros((Height, Width))
@@ -91,9 +103,9 @@ def makeBVFeature(PointCloud_, Discretization, bc):
 
     normalizedCounts = np.minimum(1.0, np.log(counts + 1) / np.log(max_counts))
 
-    intensityMap[np.int_(PointCloud_top[:, 0]),
-                 np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
-    densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
+    intensityMap[np.int_(PointCloud_top[:, x_idx]),
+                 np.int_(PointCloud_top[:, y_idx])] = PointCloud_top[:, 3]
+    densityMap[np.int_(PointCloud_top[:, x_idx]), np.int_(PointCloud_top[:, y_idx])] = normalizedCounts
 
     # Create the RGB map (r = density, g = height, b = intensity)
     RGB_Map = np.zeros((3, Height - 1, Width - 1))
