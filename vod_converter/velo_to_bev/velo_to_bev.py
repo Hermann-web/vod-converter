@@ -18,13 +18,17 @@ logger = logging.getLogger(__name__)
 
 class KittiYOLODataset:
 
-    def __init__(self, imageset_dir: os.PathLike):
+    def __init__(self, imageset_dir: os.PathLike, projection_plane: str = 'xy'):
         self.lidar_path = Path(imageset_dir) / "velodyne"
         self.label_path = Path(imageset_dir) / "label_2"
         self.calib_path = Path(imageset_dir) / "calib"
         self.files = sorted(glob.glob("%s/*.bin" % self.lidar_path))
         self.image_idx_list = [os.path.split(x)[1].split(".")[0].strip() for x in self.files]
         self.sample_id_list = [int(sample_id) for sample_id in self.image_idx_list]
+        assert projection_plane in (
+            'xy', 'yz'
+        ), f"Invalid projection_plane {projection_plane}. Use 'xy' for ground or 'yz' for image plane."
+        self.projection_plane = projection_plane
 
     def __len__(self):
         return len(self.sample_id_list)
@@ -51,7 +55,10 @@ class KittiYOLODataset:
         lidarData = self.get_lidar(sample_id)
 
         b = bev_utils.removePoints(lidarData, cnf.boundary, reduce_resolution=0)
-        rgb_map = bev_utils.makeBVFeature(b, cnf.DISCRETIZATION, cnf.boundary)
+        rgb_map = bev_utils.makeBVFeature(b,
+                                          cnf.DISCRETIZATION,
+                                          cnf.boundary,
+                                          projection_plane=self.projection_plane)
 
         return rgb_map
 
@@ -65,7 +72,7 @@ class KittiYOLODataset:
         if not noObjectLabels:
             labels[:, 1:] = aug_utils.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                           calib.P)  # convert rect cam to velo cord
-        target = bev_utils.build_yolo_target(labels)
+        target = bev_utils.build_yolo_target(labels, projection_plane=self.projection_plane)
         logger.debug(f"target:{target.shape}")
         ntargets = 0
         for i, t in enumerate(target):

@@ -159,12 +159,34 @@ def get_corners(x, y, w, l, yaw):
     return bev_corners
 
 
-def build_yolo_target(labels: np.ndarray) -> np.ndarray:
+def build_yolo_target(labels: np.ndarray, projection_plane='xy') -> np.ndarray:
+    """
+    Build YOLO targets based on the given labels and projection plane.
+    
+    Parameters:
+    labels (np.ndarray): Array of object labels with [class, x, y, z, h, w, l, yaw].
+    projection_plane (str): The projection plane, 'xy' for ground plane or 'yz' for image plane.
+    
+    Returns:
+    np.ndarray: Target array with bounding box and orientation information.
+    """
     bc = cnf.boundary
     target = np.zeros([50, 7], dtype=np.float32)
 
     index = 0
+
+    # Define axis mapping based on the projection plane
+    if projection_plane == 'xy':
+        x_idx, y_idx = 0, 1  # Project onto (x, y) and adjust w, l
+        minX, maxX, minY, maxY = bc['minX'], bc['maxX'], bc['minY'], bc['maxY']
+    elif projection_plane == 'yz':
+        x_idx, y_idx = 2, 1  # Project onto (y, z) and adjust l, h
+        minX, maxX, minY, maxY = bc['minZ'], bc['maxZ'], bc['minY'], bc['maxY']
+    else:
+        raise ValueError("Invalid projection_plane. Use 'xy' for ground or 'yz' for image plane.")
+
     logger.debug(f"labels:{labels.shape}")
+
     for i in range(labels.shape[0]):
         cl, x, y, z, h, w, l, yaw = labels[i]
 
@@ -172,15 +194,25 @@ def build_yolo_target(labels: np.ndarray) -> np.ndarray:
         l = l + 0.3
         w = w + 0.3
 
-        yaw = np.pi * 2 - yaw
-        if (x > bc["minX"]) and (x < bc["maxX"]) and (y > bc["minY"]) and (y < bc["maxY"]):
-            y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"]
-                                    )  # we should put this in [0,1], so divide max_size  80 m
-            x1 = (x - bc["minX"]) / (bc["maxX"] - bc["minX"]
-                                    )  # we should put this in [0,1], so divide max_size  40 m
-            w1 = w / (bc["maxY"] - bc["minY"])
-            l1 = l / (bc["maxX"] - bc["minX"])
+        pos_data = [x, y, z]
+        dis_data = [l, w, h]
+        x, y = pos_data[x_idx], pos_data[y_idx]
+        l, w = dis_data[x_idx], dis_data[y_idx]
 
+        # Adjust yaw to be relative to full circle
+        yaw = np.pi * 2 - yaw
+
+        # Check if the object is within the boundary conditions
+        if (x > minX) and (x < maxX) and (y > minY) and (y < maxY):
+            # Normalize the coordinates to be in the range [0, 1]
+            y1 = (y - minY) / (maxY - minY)
+            x1 = (x - minX) / (maxX - minX)
+
+            # Normalize width and length according to the boundary conditions
+            w1 = w / (maxY - minY)
+            l1 = l / (maxX - minX)
+
+            # Fill in the target array with class, position, size, and orientation
             target[index][0] = cl
             target[index][1] = y1
             target[index][2] = x1
@@ -189,7 +221,7 @@ def build_yolo_target(labels: np.ndarray) -> np.ndarray:
             target[index][5] = math.sin(float(yaw))
             target[index][6] = math.cos(float(yaw))
 
-            index = index + 1
+            index += 1
 
     return target
 
