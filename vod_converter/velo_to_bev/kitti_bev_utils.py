@@ -105,12 +105,13 @@ def makeBVFeature(PointCloud_, Discretization, bc, projection_plane='xy'):
 
     intensityMap[np.int_(PointCloud_top[:, x_idx]),
                  np.int_(PointCloud_top[:, y_idx])] = PointCloud_top[:, 3]
-    densityMap[np.int_(PointCloud_top[:, x_idx]), np.int_(PointCloud_top[:, y_idx])] = normalizedCounts
+    densityMap[np.int_(PointCloud_top[:, x_idx]),
+               np.int_(PointCloud_top[:, y_idx])] = normalizedCounts
 
     # Create the RGB map (r = density, g = height, b = intensity)
     RGB_Map = np.zeros((3, Height - 1, Width - 1))
     RGB_Map[2, :, :] = densityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # r_map (density)
-    RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]   # g_map (height)
+    RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # g_map (height)
     RGB_Map[0, :, :] = intensityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # b_map (intensity)
 
     return RGB_Map
