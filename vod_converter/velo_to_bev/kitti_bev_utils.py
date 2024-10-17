@@ -58,6 +58,7 @@ def makeBVFeature(PointCloud_, Discretization, bc):
     """
     PointCloud = np.copy(PointCloud_)
 
+    # Set up the height and width for the BEV feature map
     Height = cnf.BEV_HEIGHT + 1
     Width = cnf.BEV_WIDTH + 1
     max_counts = cnf.MAX_COUNTS
@@ -70,7 +71,7 @@ def makeBVFeature(PointCloud_, Discretization, bc):
     indices = np.lexsort((-PointCloud[:, 2], PointCloud[:, 1], PointCloud[:, 0]))
     PointCloud = PointCloud[indices]
 
-    # Height Map
+    # Height Map: normalize based on height range
     heightMap = np.zeros((Height, Width))
 
     _, indices, counts = np.unique(PointCloud[:, 0:2],
@@ -94,10 +95,11 @@ def makeBVFeature(PointCloud_, Discretization, bc):
                  np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
     densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
 
+    # Create the RGB map (r = density, g = height, b = intensity)
     RGB_Map = np.zeros((3, Height - 1, Width - 1))
-    RGB_Map[2, :, :] = densityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # r_map
-    RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # g_map
-    RGB_Map[0, :, :] = intensityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # b_map
+    RGB_Map[2, :, :] = densityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # r_map (density)
+    RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]   # g_map (height)
+    RGB_Map[0, :, :] = intensityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # b_map (intensity)
 
     return RGB_Map
 
