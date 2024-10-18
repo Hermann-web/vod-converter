@@ -4,7 +4,8 @@ import logging
 from typing import Tuple
 
 import numpy as np
-import velo_to_bev.config as cnf
+
+import vod_converter.velo_to_bev.config as cnf
 
 logger = logging.getLogger(__name__)
 

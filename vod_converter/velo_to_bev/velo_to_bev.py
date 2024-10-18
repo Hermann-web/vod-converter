@@ -8,10 +8,11 @@ from typing import Dict, List
 import cv2
 import numpy as np
 import torch
-import velo_to_bev.config as cnf
-import velo_to_bev.kitti_aug_utils as aug_utils
-import velo_to_bev.kitti_bev_utils as bev_utils
-import velo_to_bev.kitti_utils as kitti_utils
+
+import vod_converter.velo_to_bev.config as cnf
+import vod_converter.velo_to_bev.kitti_aug_utils as aug_utils
+import vod_converter.velo_to_bev.kitti_bev_utils as bev_utils
+import vod_converter.velo_to_bev.kitti_utils as kitti_utils
 
 logger = logging.getLogger(__name__)
 

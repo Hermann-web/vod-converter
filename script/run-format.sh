@@ -1,2 +1,7 @@
-poetry run isort vod_converter/
-poetry run yapf vod_converter/ -i -r -vv
+MODULE=./vod_converter
+
+echo "-> running isort ..."
+poetry run isort $MODULE
+
+echo "-> running yapf ..."
+poetry run yapf -i -r -vv $MODULE

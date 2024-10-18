@@ -33,17 +33,14 @@ each row corresponds to one object. The 15 columns represent:
 import csv
 import os
 import shutil
-import sys
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List
 
-from converter import Egestor, Ingestor
 from PIL import Image
 from tqdm import tqdm
 
-sys.path.append(Path(__file__).parent)
-
-from velo_to_bev.velo_to_bev import get_bev_dataset, get_bev_dataset_wrapper
+from vod_converter.converter import Egestor, Ingestor
+from vod_converter.velo_to_bev.velo_to_bev import get_bev_dataset_wrapper
 
 
 class KITTIIngestor(Ingestor):

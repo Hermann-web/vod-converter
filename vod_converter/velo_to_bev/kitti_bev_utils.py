@@ -4,8 +4,9 @@ from typing import Dict, List, Tuple
 
 import cv2
 import numpy as np
-import velo_to_bev.config as cnf
-from velo_to_bev.kitti_utils import Object3d
+
+import vod_converter.velo_to_bev.config as cnf
+from vod_converter.velo_to_bev.kitti_utils import Object3d
 
 logger = logging.getLogger(__name__)
 
